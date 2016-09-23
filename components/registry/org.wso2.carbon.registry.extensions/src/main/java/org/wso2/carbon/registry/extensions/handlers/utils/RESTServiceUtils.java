@@ -354,7 +354,6 @@ public class RESTServiceUtils {
 			} catch (XMLStreamException e) {
 				StringBuilder msg = new StringBuilder("Error in parsing the service content of the service. Path: ")
 						.append(requestContext.getResourcePath().getPath()).append(".");
-				log.error(msg.toString());
 				throw new RegistryException(msg.toString(), e);
 			}
 

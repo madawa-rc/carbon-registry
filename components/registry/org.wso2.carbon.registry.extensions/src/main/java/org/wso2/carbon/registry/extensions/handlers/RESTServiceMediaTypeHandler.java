@@ -138,7 +138,6 @@ public class RESTServiceMediaTypeHandler extends Handler {
             StringBuilder msg = new StringBuilder("Error in parsing the service content of the service. ")
                     .append("The requested path to store the service: ")
                     .append(requestContext.getResourcePath().getPath()).append(".");
-            log.error(msg.toString());
             throw new RegistryException(msg.toString(), e);
         }
 
