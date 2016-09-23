@@ -423,10 +423,10 @@ public class RESTServiceUtils {
 		}
 		OMElement interfaceElement = serviceInfoElement.getFirstChildWithName(
 				new QName(CommonConstants.SERVICE_ELEMENT_NAMESPACE, INTERFACE_ELEMENT_LOCAL_NAME, ""));
-		if( interfaceElement != null) {
+		if (interfaceElement != null) {
 			OMElement element = interfaceElement
 					.getFirstChildWithName(new QName(CommonConstants.SERVICE_ELEMENT_NAMESPACE, localName, ""));
-			return element != null ? !"null".equals(element.getText().trim()) ? element.getText().trim(): null : null;
+			return element != null ? !"null".equals(element.getText().trim()) ? element.getText().trim() : null : null;
 		}
 		return null;
 	}
