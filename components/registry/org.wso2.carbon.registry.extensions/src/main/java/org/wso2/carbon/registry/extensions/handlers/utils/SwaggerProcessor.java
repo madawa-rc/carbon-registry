@@ -63,290 +63,284 @@ import java.util.UUID;
  */
 public class SwaggerProcessor {
 
-	private static final Log log = LogFactory.getLog(SwaggerProcessor.class);
-	private static final String DEFAULT_TRANSPORT = "http://";
-	private static final String DEFAULT_BASE_PATH = "/";
+    private static final Log log = LogFactory.getLog(SwaggerProcessor.class);
+    private static final String DEFAULT_TRANSPORT = "http://";
+    private static final String DEFAULT_BASE_PATH = "/";
 
-	private RequestContext requestContext;
-	private Registry registry;
-	private JsonParser parser;
-	private String swaggerResourcesPath;
-	private String documentVersion;
-	private String endpointUrl;
-	private OMElement restServiceElement = null;
-	private OMElement endpointElement = null;
-	private String endpointLocation;
-	private boolean createRestServiceArtifact;
+    private RequestContext requestContext;
+    private Registry registry;
+    private JsonParser parser;
+    private String swaggerResourcesPath;
+    private String documentVersion;
+    private String endpointUrl;
+    private OMElement restServiceElement = null;
+    private OMElement endpointElement = null;
+    private String endpointLocation;
+    private boolean createRestServiceArtifact;
 
-	public SwaggerProcessor(RequestContext requestContext, boolean createRestServiceArtifact) {
-		this.parser = new JsonParser();
-		this.requestContext = requestContext;
-		this.registry = requestContext.getRegistry();
-		this.createRestServiceArtifact = createRestServiceArtifact;
-	}
+    public SwaggerProcessor(RequestContext requestContext, boolean createRestServiceArtifact) {
+        this.parser = new JsonParser();
+        this.requestContext = requestContext;
+        this.registry = requestContext.getRegistry();
+        this.createRestServiceArtifact = createRestServiceArtifact;
+    }
 
-	/**
-	 * @return createRestServiceArtifact
-	 */
-	public boolean isCreateRestServiceArtifact() {
-		return createRestServiceArtifact;
-	}
+    public boolean isCreateRestServiceArtifact() {
+        return createRestServiceArtifact;
+    }
 
-	/**
-	 * @param createRestServiceArtifact boolean to set createRestServiceArtifact
-	 */
-	public void setCreateRestServiceArtifact(boolean createRestServiceArtifact) {
-		this.createRestServiceArtifact = createRestServiceArtifact;
-	}
+    public void setCreateRestServiceArtifact(boolean createRestServiceArtifact) {
+        this.createRestServiceArtifact = createRestServiceArtifact;
+    }
 
-	/**
-	 * Saves the swagger file as a registry artifact.
-	 *
-	 * @param inputStream           input stream to read content.
-	 * @param commonLocation        root location of the swagger artifacts.
-	 * @param sourceUrl             source URL.
-	 * @return                      swagger resource path.
-	 * @throws RegistryException    If a failure occurs when adding the swagger to registry.
-	 */
-	public String processSwagger(InputStream inputStream, String commonLocation, String sourceUrl)
-			throws RegistryException {
-		//create a collection if not exists.
-		createCollection(commonLocation);
-
-		//Reading resource content and content details.
-		ByteArrayOutputStream swaggerContentStream = CommonUtil.readSourceContent(inputStream);
-		JsonObject swaggerDocObject = getSwaggerObject(swaggerContentStream.toString());
-		String swaggerVersion = getSwaggerVersion(swaggerDocObject);
-		documentVersion = requestContext.getResource().getProperty(RegistryConstants.VERSION_PARAMETER_NAME);
-		if (documentVersion == null) {
-			documentVersion = CommonConstants.SWAGGER_DOC_VERSION_DEFAULT_VALUE;
-			requestContext.getResource().setProperty(RegistryConstants.VERSION_PARAMETER_NAME, documentVersion);
-		}
-		String swaggerResourcePath = getSwaggerDocumentPath(commonLocation, swaggerDocObject);
-
-		/*
-		Switches from the swagger version and process document adding process and the REST Service creation process
-		using the relevant documents.
-		 */
-		if (SwaggerConstants.SWAGGER_VERSION_12.equals(swaggerVersion)) {
-			if (addSwaggerDocumentToRegistry(swaggerContentStream, swaggerResourcePath, documentVersion)) {
-				List<JsonObject> resourceObjects = addResourceDocsToRegistry(swaggerDocObject, sourceUrl,
-						swaggerResourcePath);
-				if (isCreateRestServiceArtifact()) {
-					restServiceElement = (resourceObjects != null) ?
-							RESTServiceUtils.createRestServiceArtifact(swaggerDocObject, swaggerVersion, endpointUrl,
-									resourceObjects, swaggerResourcePath, documentVersion) :
-							null;
-				}
-			} else {
-				return null;
-			}
-
-		} else if (SwaggerConstants.SWAGGER_VERSION_2.equals(swaggerVersion)) {
-			if (addSwaggerDocumentToRegistry(swaggerContentStream, swaggerResourcePath, documentVersion)) {
-				createEndpointElement(swaggerDocObject, swaggerVersion);
-				if (isCreateRestServiceArtifact()) {
-					restServiceElement = RESTServiceUtils
-							.createRestServiceArtifact(swaggerDocObject, swaggerVersion, endpointUrl, null,
-									swaggerResourcePath, documentVersion);
-				}
-			} else {
-				return null;
-			}
-		}
-
-		/*
-		If REST Service content is not empty and createRestServiceArtifact is true,
-		saves the REST service and adds the relevant associations.
-		 */
-		if(isCreateRestServiceArtifact()) {
-			if (restServiceElement != null) {
-				String servicePath = RESTServiceUtils.addServiceToRegistry(requestContext, restServiceElement);
-				registry.addAssociation(servicePath, swaggerResourcePath, CommonConstants.DEPENDS);
-				registry.addAssociation(swaggerResourcePath, servicePath, CommonConstants.USED_BY);
-				saveEndpointElement(servicePath);
-			} else {
-				log.warn("Service content is null. Cannot create the REST Service artifact.");
-			}
-		}
-
-		CommonUtil.closeOutputStream(swaggerContentStream);
-
-		return swaggerResourcePath;
-	}
-
-	/**
-	 * Save endpoint element to the registry.
-	 *
-	 * @param servicePath           service path.
-	 * @throws RegistryException    If fails to save the endpoint.
+    /**
+     * Saves the swagger file as a registry artifact.
+     *
+     * @param inputStream           input stream to read content.
+     * @param commonLocation        root location of the swagger artifacts.
+     * @param sourceUrl             source URL.
+     * @return                      swagger resource path.
+     * @throws RegistryException    If a failure occurs when adding the swagger to registry.
      */
-	public void saveEndpointElement(String servicePath) throws RegistryException {
-		String endpointPath;
-		if (StringUtils.isNotBlank(endpointUrl)) {
-			EndpointUtils.addEndpointToService(requestContext.getRegistry(), servicePath, endpointUrl, "");
-			endpointPath = RESTServiceUtils.addEndpointToRegistry(requestContext, endpointElement, endpointLocation);
-			CommonUtil.addDependency(registry, servicePath, endpointPath);
-		}
-	}
+    public String processSwagger(InputStream inputStream, String commonLocation, String sourceUrl)
+            throws RegistryException {
+        //create a collection if not exists.
+        createCollection(commonLocation);
 
-	/**
-	 * Saves a swagger document in the registry.
-	 *
-	 * @param contentStream         resource content.
-	 * @param path                  resource path.
-	 * @param documentVersion       version of the swagger document.
-	 * @throws RegistryException    If fails to add the swagger document to registry.
-	 */
-	private boolean addSwaggerDocumentToRegistry(ByteArrayOutputStream contentStream, String path, String documentVersion)
-			throws RegistryException {
-		Resource resource;
-		/*
-		Checks if a resource is already exists in the given path.
-		If exists,
-			Compare resource contents and if updated, updates the document, if not skip the updating process
-		If not exists,
-			Creates a new resource and add to the resource path.
-		 */
-		if (registry.resourceExists(path)) {
-			resource = registry.get(path);
-			Object resourceContentObj = resource.getContent();
-			String resourceContent;
-			if (resourceContentObj instanceof String) {
-				resourceContent = (String) resourceContentObj;
-				resource.setContent(RegistryUtils.encodeString(resourceContent));
-			} else if (resourceContentObj instanceof byte[]) {
-				resourceContent = RegistryUtils.decodeBytes((byte[]) resourceContentObj);
-			} else {
-				throw new RegistryException(CommonConstants.INVALID_CONTENT);
-			}
-			if (resourceContent.equals(contentStream.toString())) {
-				if (log.isDebugEnabled()) {
-					log.debug("Old content is same as the new content. Skipping the put action.");
-				}
-				return true;
-			}
-		} else {
-			//If a resource does not exist in the given path.
-			resource = new ResourceImpl();
-		}
+        //Reading resource content and content details.
+        ByteArrayOutputStream swaggerContentStream = CommonUtil.readSourceContent(inputStream);
+        JsonObject swaggerDocObject = getSwaggerObject(swaggerContentStream.toString());
+        String swaggerVersion = getSwaggerVersion(swaggerDocObject);
+        documentVersion = requestContext.getResource().getProperty(RegistryConstants.VERSION_PARAMETER_NAME);
+        if (documentVersion == null) {
+            documentVersion = CommonConstants.SWAGGER_DOC_VERSION_DEFAULT_VALUE;
+            requestContext.getResource().setProperty(RegistryConstants.VERSION_PARAMETER_NAME, documentVersion);
+        }
+        String swaggerResourcePath = getSwaggerDocumentPath(commonLocation, swaggerDocObject);
 
-		String resourceId = (resource.getUUID() == null) ? UUID.randomUUID().toString() : resource.getUUID();
+        /*
+        Switches from the swagger version and process document adding process and the REST Service creation process
+        using the relevant documents.
+         */
+        if (SwaggerConstants.SWAGGER_VERSION_12.equals(swaggerVersion)) {
+            if (addSwaggerDocumentToRegistry(swaggerContentStream, swaggerResourcePath, documentVersion)) {
+                List<JsonObject> resourceObjects = addResourceDocsToRegistry(swaggerDocObject, sourceUrl,
+                        swaggerResourcePath);
+                if (isCreateRestServiceArtifact()) {
+                    restServiceElement = (resourceObjects != null) ?
+                            RESTServiceUtils.createRestServiceArtifact(swaggerDocObject, swaggerVersion, endpointUrl,
+                                    resourceObjects, swaggerResourcePath, documentVersion) :
+                            null;
+                }
+            } else {
+                return null;
+            }
 
-		resource.setUUID(resourceId);
-		resource.setMediaType(CommonConstants.SWAGGER_MEDIA_TYPE);
-		resource.setContent(contentStream.toByteArray());
-		resource.addProperty(RegistryConstants.VERSION_PARAMETER_NAME, documentVersion);
+        } else if (SwaggerConstants.SWAGGER_VERSION_2.equals(swaggerVersion)) {
+            if (addSwaggerDocumentToRegistry(swaggerContentStream, swaggerResourcePath, documentVersion)) {
+                createEndpointElement(swaggerDocObject, swaggerVersion);
+                if (isCreateRestServiceArtifact()) {
+                    restServiceElement = RESTServiceUtils
+                            .createRestServiceArtifact(swaggerDocObject, swaggerVersion, endpointUrl, null,
+                                    swaggerResourcePath, documentVersion);
+                }
+            } else {
+                return null;
+            }
+        }
+
+        /*
+        If REST Service content is not empty and createRestServiceArtifact is true,
+        saves the REST service and adds the relevant associations.
+         */
+        if (isCreateRestServiceArtifact()) {
+            if (restServiceElement != null) {
+                String servicePath = RESTServiceUtils.addServiceToRegistry(requestContext, restServiceElement);
+                registry.addAssociation(servicePath, swaggerResourcePath, CommonConstants.DEPENDS);
+                registry.addAssociation(swaggerResourcePath, servicePath, CommonConstants.USED_BY);
+                saveEndpointElement(servicePath);
+            } else {
+                log.warn("Service content is null. Cannot create the REST Service artifact.");
+            }
+        }
+
+        CommonUtil.closeOutputStream(swaggerContentStream);
+
+        return swaggerResourcePath;
+    }
+
+    /**
+     * Save endpoint element to the registry.
+     *
+     * @param servicePath           service path.
+     * @throws RegistryException    If fails to save the endpoint.
+     */
+    public void saveEndpointElement(String servicePath) throws RegistryException {
+        String endpointPath;
+        if (StringUtils.isNotBlank(endpointUrl)) {
+            EndpointUtils.addEndpointToService(requestContext.getRegistry(), servicePath, endpointUrl, "");
+            endpointPath = RESTServiceUtils.addEndpointToRegistry(requestContext, endpointElement, endpointLocation);
+            CommonUtil.addDependency(registry, servicePath, endpointPath);
+        }
+    }
+
+    /**
+     * Saves a swagger document in the registry.
+     *
+     * @param contentStream         resource content.
+     * @param path                  resource path.
+     * @param documentVersion       version of the swagger document.
+     * @throws RegistryException    If fails to add the swagger document to registry.
+     */
+    private boolean addSwaggerDocumentToRegistry(ByteArrayOutputStream contentStream, String path,
+            String documentVersion) throws RegistryException {
+        Resource resource;
+        /*
+        Checks if a resource is already exists in the given path.
+        If exists,
+            Compare resource contents and if updated, updates the document, if not skip the updating process
+        If not exists,
+            Creates a new resource and add to the resource path.
+         */
+        if (registry.resourceExists(path)) {
+            resource = registry.get(path);
+            Object resourceContentObj = resource.getContent();
+            String resourceContent;
+            if (resourceContentObj instanceof String) {
+                resourceContent = (String) resourceContentObj;
+                resource.setContent(RegistryUtils.encodeString(resourceContent));
+            } else if (resourceContentObj instanceof byte[]) {
+                resourceContent = RegistryUtils.decodeBytes((byte[]) resourceContentObj);
+            } else {
+                throw new RegistryException(CommonConstants.INVALID_CONTENT);
+            }
+            if (resourceContent.equals(contentStream.toString())) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Old content is same as the new content. Skipping the put action.");
+                }
+                return true;
+            }
+        } else {
+            //If a resource does not exist in the given path.
+            resource = new ResourceImpl();
+        }
+
+        String resourceId = (resource.getUUID() == null) ? UUID.randomUUID().toString() : resource.getUUID();
+
+        resource.setUUID(resourceId);
+        resource.setMediaType(CommonConstants.SWAGGER_MEDIA_TYPE);
+        resource.setContent(contentStream.toByteArray());
+        resource.addProperty(RegistryConstants.VERSION_PARAMETER_NAME, documentVersion);
         CommonUtil.copyProperties(this.requestContext.getResource(), resource);
-		registry.put(path, resource);
+        registry.put(path, resource);
 
         return true;
-	}
+    }
 
-	/**
-	 * Creates a collection in the given common location.
-	 *
-	 * @param commonLocation        location to create the collection.
-	 * @throws RegistryException    If fails to create a collection at given location.
-	 */
-	private void createCollection(String commonLocation) throws RegistryException {
-		Registry systemRegistry = CommonUtil.getUnchrootedSystemRegistry(requestContext);
-		//Creating a collection if not exists.
-		if (!systemRegistry.resourceExists(commonLocation)) {
-			systemRegistry.put(commonLocation, systemRegistry.newCollection());
-		}
-	}
+    /**
+     * Creates a collection in the given common location.
+     *
+     * @param commonLocation        location to create the collection.
+     * @throws RegistryException    If fails to create a collection at given location.
+     */
+    private void createCollection(String commonLocation) throws RegistryException {
+        Registry systemRegistry = CommonUtil.getUnchrootedSystemRegistry(requestContext);
+        //Creating a collection if not exists.
+        if (!systemRegistry.resourceExists(commonLocation)) {
+            systemRegistry.put(commonLocation, systemRegistry.newCollection());
+        }
+    }
 
-	/**
-	 * Adds swagger 1.2 api resource documents to registry and returns a list of resource documents as JSON objects.
-	 *
-	 * @param swaggerDocObject      swagger document JSON object.
-	 * @param sourceUrl             source url of the swagger document.
-	 * @param swaggerDocPath        swagger document path. (path of the registry)
-	 * @return                      List of api resources.
-	 * @throws RegistryException    If fails to import or save resource docs to the registry.
-	 */
-	private List<JsonObject> addResourceDocsToRegistry(JsonObject swaggerDocObject, String sourceUrl,
-	                                                   String swaggerDocPath) throws RegistryException {
+    /**
+     * Adds swagger 1.2 api resource documents to registry and returns a list of resource documents as JSON objects.
+     *
+     * @param swaggerDocObject      swagger document JSON object.
+     * @param sourceUrl             source url of the swagger document.
+     * @param swaggerDocPath        swagger document path. (path of the registry)
+     * @return                      List of api resources.
+     * @throws RegistryException    If fails to import or save resource docs to the registry.
+     */
+    private List<JsonObject> addResourceDocsToRegistry(JsonObject swaggerDocObject, String sourceUrl,
+            String swaggerDocPath) throws RegistryException {
 
-		if (sourceUrl == null) {
-			log.debug(CommonConstants.EMPTY_URL);
-			log.warn("Resource paths cannot be read. Creating the REST service might fail.");
-			return null;
-		} else if (sourceUrl.startsWith("file")) {
-			sourceUrl = sourceUrl.substring(0,sourceUrl.lastIndexOf("/"));
-		}
+        if (sourceUrl == null) {
+            log.debug(CommonConstants.EMPTY_URL);
+            log.warn("Resource paths cannot be read. Creating the REST service might fail.");
+            return null;
+        } else if (sourceUrl.startsWith("file")) {
+            sourceUrl = sourceUrl.substring(0, sourceUrl.lastIndexOf("/"));
+        }
 
-		List<JsonObject> resourceObjects = new ArrayList<>();
-		//Adding Resource documents to registry.
-		JsonArray pathResources = swaggerDocObject.get(SwaggerConstants.APIS).getAsJsonArray();
-		ByteArrayOutputStream resourceContentStream = null;
-		InputStream resourceInputStream = null;
-		String path;
+        List<JsonObject> resourceObjects = new ArrayList<>();
+        //Adding Resource documents to registry.
+        JsonArray pathResources = swaggerDocObject.get(SwaggerConstants.APIS).getAsJsonArray();
+        ByteArrayOutputStream resourceContentStream = null;
+        InputStream resourceInputStream = null;
+        String path;
 
-		/*
-		Loops through apis array of the swagger 1.2 api-doc and reads all the resource documents and saves them in to
-		the registry.
-		 */
-		for (JsonElement pathResource : pathResources) {
-			JsonObject resourceObj = pathResource.getAsJsonObject();
-			path = resourceObj.get(SwaggerConstants.PATH).getAsString();
-			try {
-				resourceInputStream = new URL(sourceUrl + path).openStream();
-			} catch (IOException e) {
-				throw new RegistryException("The URL " + sourceUrl + path + " is incorrect.", e);
-			}
-			resourceContentStream = CommonUtil.readSourceContent(resourceInputStream);
-			JsonObject resourceObject = parser.parse(resourceContentStream.toString()).getAsJsonObject();
-			resourceObjects.add(resourceObject);
-			if (endpointElement == null) {
-				createEndpointElement(resourceObject, SwaggerConstants.SWAGGER_VERSION_12);
-			}
-			//path = swaggerResourcesPath + path;
-            path = path.replace("/","");
+        /*
+        Loops through apis array of the swagger 1.2 api-doc and reads all the resource documents and saves them in to
+        the registry.
+         */
+        for (JsonElement pathResource : pathResources) {
+            JsonObject resourceObj = pathResource.getAsJsonObject();
+            path = resourceObj.get(SwaggerConstants.PATH).getAsString();
+            try {
+                resourceInputStream = new URL(sourceUrl + path).openStream();
+            } catch (IOException e) {
+                throw new RegistryException("The URL " + sourceUrl + path + " is incorrect.", e);
+            }
+            resourceContentStream = CommonUtil.readSourceContent(resourceInputStream);
+            JsonObject resourceObject = parser.parse(resourceContentStream.toString()).getAsJsonObject();
+            resourceObjects.add(resourceObject);
+            if (endpointElement == null) {
+                createEndpointElement(resourceObject, SwaggerConstants.SWAGGER_VERSION_12);
+            }
+            //path = swaggerResourcesPath + path;
+            path = path.replace("/", "");
             path = CommonUtil.replaceExpressionOfPath(swaggerResourcesPath, "name", path);
-            path = RegistryUtils.getAbsolutePath(registry.getRegistryContext(),path);
-			//Save Resource document to registry
-			if(addSwaggerDocumentToRegistry(resourceContentStream, path, documentVersion)) {
+            path = RegistryUtils.getAbsolutePath(registry.getRegistryContext(), path);
+            //Save Resource document to registry
+            if (addSwaggerDocumentToRegistry(resourceContentStream, path, documentVersion)) {
                 //Adding an dependency to API_DOC
                 registry.addAssociation(swaggerDocPath, path, CommonConstants.DEPENDS);
             }
-		}
+        }
 
-		CommonUtil.closeOutputStream(resourceContentStream);
-		CommonUtil.closeInputStream(resourceInputStream);
-		return resourceObjects;
-	}
+        CommonUtil.closeOutputStream(resourceContentStream);
+        CommonUtil.closeInputStream(resourceInputStream);
+        return resourceObjects;
+    }
 
-	/**
-	 * Generates the service endpoint element from the swagger object.
-	 *
-	 * @param swaggerObject     swagger document object.
-	 * @param swaggerVersion    swagger version.
-	 */
-	private void createEndpointElement(JsonObject swaggerObject, String swaggerVersion) throws RegistryException {
-		/*
-		Extracting endpoint url from the swagger document.
-		 */
-		if (SwaggerConstants.SWAGGER_VERSION_12.equals(swaggerVersion)) {
-			JsonElement endpointUrlElement = swaggerObject.get(SwaggerConstants.BASE_PATH);
-			if (endpointUrlElement == null) {
-				log.warn("Endpoint url is not specified in the swagger document. Endpoint creation might fail. ");
-				return;
-			} else {
-				endpointUrl = endpointUrlElement.getAsString();
-			}
-		} else if (SwaggerConstants.SWAGGER_VERSION_2.equals(swaggerVersion)) {
-			JsonElement transportsElement = swaggerObject.get(SwaggerConstants.SCHEMES);
-			JsonArray transports = (transportsElement != null) ? transportsElement.getAsJsonArray() : null;
-			String transport = (transports != null) ? transports.get(0).getAsString() + "://" : DEFAULT_TRANSPORT;
-			JsonElement hostElement = swaggerObject.get(SwaggerConstants.HOST);
-			String host = (hostElement != null) ? hostElement.getAsString() : null;
+    /**
+     * Generates the service endpoint element from the swagger object.
+     *
+     * @param swaggerObject     swagger document object.
+     * @param swaggerVersion    swagger version.
+     */
+    private void createEndpointElement(JsonObject swaggerObject, String swaggerVersion) throws RegistryException {
+        /*
+        Extracting endpoint url from the swagger document.
+         */
+        if (SwaggerConstants.SWAGGER_VERSION_12.equals(swaggerVersion)) {
+            JsonElement endpointUrlElement = swaggerObject.get(SwaggerConstants.BASE_PATH);
+            if (endpointUrlElement == null) {
+                log.warn("Endpoint url is not specified in the swagger document. Endpoint creation might fail. ");
+                return;
+            } else {
+                endpointUrl = endpointUrlElement.getAsString();
+            }
+        } else if (SwaggerConstants.SWAGGER_VERSION_2.equals(swaggerVersion)) {
+            JsonElement transportsElement = swaggerObject.get(SwaggerConstants.SCHEMES);
+            JsonArray transports = (transportsElement != null) ? transportsElement.getAsJsonArray() : null;
+            String transport = (transports != null) ? transports.get(0).getAsString() + "://" : DEFAULT_TRANSPORT;
+            JsonElement hostElement = swaggerObject.get(SwaggerConstants.HOST);
+            String host = (hostElement != null) ? hostElement.getAsString() : null;
             if (host == null) {
                 log.warn("Endpoint(host) url is not specified in the swagger document. "
                         + "The host serving the documentation is to be used(including the port) as endpoint host");
 
-                if(requestContext.getSourceURL() != null) {
+                if (requestContext.getSourceURL() != null) {
                     URL sourceURL = null;
                     try {
                         sourceURL = new URL(requestContext.getSourceURL());
@@ -363,114 +357,112 @@ public class SwaggerProcessor {
                 return;
             }
 
-			JsonElement basePathElement = swaggerObject.get(SwaggerConstants.BASE_PATH);
-			String basePath = (basePathElement != null) ? basePathElement.getAsString() : DEFAULT_BASE_PATH;
+            JsonElement basePathElement = swaggerObject.get(SwaggerConstants.BASE_PATH);
+            String basePath = (basePathElement != null) ? basePathElement.getAsString() : DEFAULT_BASE_PATH;
 
-			endpointUrl = transport + host + basePath;
-		}
-		/*
-		Creating endpoint artifact
-		 */
-		OMFactory factory = OMAbstractFactory.getOMFactory();
-		endpointLocation = EndpointUtils.deriveEndpointFromUrl(endpointUrl);
-		String endpointName = EndpointUtils.deriveEndpointNameWithNamespaceFromUrl(endpointUrl);
-		String endpointContent = EndpointUtils
-				.getEndpointContentWithOverview(endpointUrl, endpointLocation, endpointName, documentVersion);
-		try {
-			endpointElement = AXIOMUtil.stringToOM(factory, endpointContent);
-		} catch (XMLStreamException e) {
-			throw new RegistryException("Error in creating the endpoint element. ", e);
-		}
+            endpointUrl = transport + host + basePath;
+        }
+        /*
+        Creating endpoint artifact
+         */
+        OMFactory factory = OMAbstractFactory.getOMFactory();
+        endpointLocation = EndpointUtils.deriveEndpointFromUrl(endpointUrl);
+        String endpointName = EndpointUtils.deriveEndpointNameWithNamespaceFromUrl(endpointUrl);
+        String endpointContent = EndpointUtils
+                .getEndpointContentWithOverview(endpointUrl, endpointLocation, endpointName, documentVersion);
+        try {
+            endpointElement = AXIOMUtil.stringToOM(factory, endpointContent);
+        } catch (XMLStreamException e) {
+            throw new RegistryException("Error in creating the endpoint element. ", e);
+        }
 
-	}
-
-	/**
-	 * Configures the swagger resource path form its content and returns the swagger document path.
-	 *
-	 * @param rootLocation  root location of the swagger files.
-	 * @param content       swagger content.
-	 * @return              Common resource path.
-	 */
-	private String getSwaggerDocumentPath(String rootLocation, JsonObject content) throws RegistryException {
-
-
-
-		String swaggerDocPath = requestContext.getResourcePath().getPath();
-		String swaggerDocName = swaggerDocPath.substring(swaggerDocPath.lastIndexOf(RegistryConstants.PATH_SEPARATOR) + 1);
-		JsonElement infoElement = content.get(SwaggerConstants.INFO);
-		JsonObject infoObject = (infoElement != null) ? infoElement.getAsJsonObject() : null;
-
-		if (infoObject == null || infoElement.isJsonNull()) {
-			throw new RegistryException("Invalid swagger document.");
-		}
-		String serviceName = infoObject.get(SwaggerConstants.TITLE).getAsString().replaceAll("\\s", "");
-		String serviceProvider = CarbonContext.getThreadLocalCarbonContext().getUsername();
-
-		swaggerResourcesPath = rootLocation + serviceProvider + RegistryConstants.PATH_SEPARATOR + serviceName +
-		                       RegistryConstants.PATH_SEPARATOR + documentVersion;
-
-        String pathExpression = getSwaggerRegistryPath(swaggerDocName, serviceProvider);
-
-
-		return RegistryUtils.getAbsolutePath(registry.getRegistryContext(),pathExpression);
-	}
-
-    private String getSwaggerRegistryPath(String swaggerDocName, String serviceProvider) {
-        String pathExpression = Utils.getRxtService().getStoragePath(CommonConstants.SWAGGER_MEDIA_TYPE);
-        pathExpression = CommonUtil.getPathFromPathExpression(pathExpression,
-                                                              requestContext.getResource().getProperties(), null);
-        pathExpression = CommonUtil.replaceExpressionOfPath(pathExpression, "provider", serviceProvider);
-        swaggerResourcesPath = pathExpression;
-        pathExpression = CommonUtil.replaceExpressionOfPath(pathExpression, "name", swaggerDocName);
-		String swaggerPath = pathExpression;
-		/**
-		 * Fix for the REGISTRY-3052 : validation is to check the whether this invoked by ZIPWSDLMediaTypeHandler
-		 * Setting the registry and absolute paths to current session to avoid incorrect resource path entry in REG_LOG table
-		 */
-		if (CurrentSession.getLocalPathMap() != null && !Boolean.valueOf(CurrentSession.getLocalPathMap().get(CommonConstants.ARCHIEVE_UPLOAD))) {
-			swaggerPath = CommonUtil.getRegistryPath(requestContext.getRegistry().getRegistryContext(), pathExpression);
-			if (log.isDebugEnabled()) {
-				log.debug("Saving current session local paths, key: " + swaggerPath + " | value: " + pathExpression);
-			}
-			CurrentSession.getLocalPathMap().put(swaggerPath, pathExpression);
-		}
-		return swaggerPath;
     }
 
     /**
-	 * Parses the swagger content and return as a JsonObject
-	 *
-	 * @param swaggerContent        content as a String.
-	 * @return                      Swagger document as a JSON Object.
-	 * @throws RegistryException    If fails to parse the swagger document.
-	 */
-	private JsonObject getSwaggerObject(String swaggerContent) throws RegistryException {
-		JsonElement swaggerElement = parser.parse(swaggerContent);
+     * Configures the swagger resource path form its content and returns the swagger document path.
+     *
+     * @param rootLocation  root location of the swagger files.
+     * @param content       swagger content.
+     * @return              Common resource path.
+     */
+    private String getSwaggerDocumentPath(String rootLocation, JsonObject content) throws RegistryException {
+        String swaggerDocPath = requestContext.getResourcePath().getPath();
+        String swaggerDocName = swaggerDocPath
+                .substring(swaggerDocPath.lastIndexOf(RegistryConstants.PATH_SEPARATOR) + 1);
+        JsonElement infoElement = content.get(SwaggerConstants.INFO);
+        JsonObject infoObject = (infoElement != null) ? infoElement.getAsJsonObject() : null;
 
-		if (swaggerElement == null || swaggerElement.isJsonNull()) {
-			throw new RegistryException("Unexpected error occurred when parsing the swagger content.");
-		} else {
-			return swaggerElement.getAsJsonObject();
-		}
-	}
+        if (infoObject == null || infoElement.isJsonNull()) {
+            throw new RegistryException("Invalid swagger document.");
+        }
+        String serviceName = infoObject.get(SwaggerConstants.TITLE).getAsString().replaceAll("\\s", "");
+        String serviceProvider = CarbonContext.getThreadLocalCarbonContext().getUsername();
 
-	/**
-	 * Returns swagger version
-	 *
-	 * @param swaggerDocObject      swagger JSON.
-	 * @return                      Swagger version.
-	 * @throws RegistryException    If swagger version is unsupported.
-	 */
-	private String getSwaggerVersion(JsonObject swaggerDocObject) throws RegistryException {
-		//Getting the swagger version
-		JsonElement swaggerVersionElement = swaggerDocObject.get(SwaggerConstants.SWAGGER_VERSION_KEY);
-		swaggerVersionElement =
-				(swaggerVersionElement == null) ? swaggerDocObject.get(SwaggerConstants.SWAGGER2_VERSION_KEY) :
-				swaggerVersionElement;
-		if (swaggerVersionElement == null) {
-			throw new RegistryException("Unsupported swagger version.");
-		}
-		return swaggerVersionElement.getAsString();
-	}
+        swaggerResourcesPath = rootLocation + serviceProvider + RegistryConstants.PATH_SEPARATOR + serviceName +
+                RegistryConstants.PATH_SEPARATOR + documentVersion;
+
+        String pathExpression = getSwaggerRegistryPath(swaggerDocName, serviceProvider);
+
+        return RegistryUtils.getAbsolutePath(registry.getRegistryContext(), pathExpression);
+    }
+
+    private String getSwaggerRegistryPath(String swaggerDocName, String serviceProvider) {
+        String pathExpression = Utils.getRxtService().getStoragePath(CommonConstants.SWAGGER_MEDIA_TYPE);
+        pathExpression = CommonUtil
+                .getPathFromPathExpression(pathExpression, requestContext.getResource().getProperties(), null);
+        pathExpression = CommonUtil.replaceExpressionOfPath(pathExpression, "provider", serviceProvider);
+        swaggerResourcesPath = pathExpression;
+        pathExpression = CommonUtil.replaceExpressionOfPath(pathExpression, "name", swaggerDocName);
+        String swaggerPath = pathExpression;
+        /**
+         * Fix for the REGISTRY-3052 : validation is to check the whether this invoked by ZIPWSDLMediaTypeHandler
+         * Setting the registry and absolute paths to current session to avoid incorrect resource path entry in REG_LOG table
+         */
+        if (CurrentSession.getLocalPathMap() != null && !Boolean
+                .valueOf(CurrentSession.getLocalPathMap().get(CommonConstants.ARCHIEVE_UPLOAD))) {
+            swaggerPath = CommonUtil.getRegistryPath(requestContext.getRegistry().getRegistryContext(), pathExpression);
+            if (log.isDebugEnabled()) {
+                log.debug("Saving current session local paths, key: " + swaggerPath + " | value: " + pathExpression);
+            }
+            CurrentSession.getLocalPathMap().put(swaggerPath, pathExpression);
+        }
+        return swaggerPath;
+    }
+
+    /**
+     * Parses the swagger content and return as a JsonObject
+     *
+     * @param swaggerContent        content as a String.
+     * @return                      Swagger document as a JSON Object.
+     * @throws RegistryException    If fails to parse the swagger document.
+     */
+    private JsonObject getSwaggerObject(String swaggerContent) throws RegistryException {
+        JsonElement swaggerElement = parser.parse(swaggerContent);
+
+        if (swaggerElement == null || swaggerElement.isJsonNull()) {
+            throw new RegistryException("Unexpected error occurred when parsing the swagger content.");
+        } else {
+            return swaggerElement.getAsJsonObject();
+        }
+    }
+
+    /**
+     * Returns swagger version
+     *
+     * @param swaggerDocObject      swagger JSON.
+     * @return                      Swagger version.
+     * @throws RegistryException    If swagger version is unsupported.
+     */
+    private String getSwaggerVersion(JsonObject swaggerDocObject) throws RegistryException {
+        //Getting the swagger version
+        JsonElement swaggerVersionElement = swaggerDocObject.get(SwaggerConstants.SWAGGER_VERSION_KEY);
+        swaggerVersionElement = (swaggerVersionElement == null) ?
+                swaggerDocObject.get(SwaggerConstants.SWAGGER2_VERSION_KEY) :
+                swaggerVersionElement;
+        if (swaggerVersionElement == null) {
+            throw new RegistryException("Unsupported swagger version.");
+        }
+        return swaggerVersionElement.getAsString();
+    }
 
 }
