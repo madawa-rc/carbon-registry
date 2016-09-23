@@ -112,9 +112,6 @@ public class SwaggerMediaTypeHandler extends Handler {
 		RESTServiceUtils.setCommonEndpointLocation(endpointLocation);
 	}
 
-	/**
-	 * @return createService
-	 */
 	public boolean isCreateService() {
 		return createService;
 	}
