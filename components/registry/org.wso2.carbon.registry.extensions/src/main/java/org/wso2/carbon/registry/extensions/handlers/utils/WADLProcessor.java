@@ -218,7 +218,7 @@ public class WADLProcessor {
         }
         registry.put(actualPath, resource);
         addImportAssociations(actualPath);
-        if(getCreateService()){
+        if (getCreateService()) {
             // when creating REST service for wadl, Both resources had same uuid.
             // By adding new resource to request context. Inside addServiceToRegistry, it will check for uuid.
             // And it will create new random UUID for REST service
@@ -227,9 +227,9 @@ public class WADLProcessor {
             OMElement serviceElement = RESTServiceUtils.createRestServiceArtifact(wadlElement, wadlName, version,
                     RegistryUtils.getRelativePath(requestContext.getRegistryContext(), actualPath));
             String servicePath = RESTServiceUtils.addServiceToRegistry(requestContext, serviceElement);
-	        registry.addAssociation(servicePath, actualPath, CommonConstants.DEPENDS);
-	        registry.addAssociation(actualPath, servicePath, CommonConstants.USED_BY);
-	        saveEndpointElement(requestContext, servicePath, version);
+            registry.addAssociation(servicePath, actualPath, CommonConstants.DEPENDS);
+            registry.addAssociation(actualPath, servicePath, CommonConstants.USED_BY);
+            saveEndpointElement(requestContext, servicePath, version);
         }
 
         return resource.getPath();
@@ -254,7 +254,7 @@ public class WADLProcessor {
         ResourcePath resourcePath = requestContext.getResourcePath();
         String wadlName = RegistryUtils.getResourceName(resourcePath.getPath());
 
-        if(!wadlName.endsWith(WADL_EXTENSION)) {
+        if (!wadlName.endsWith(WADL_EXTENSION)) {
             wadlName += WADL_EXTENSION;
         }
 
@@ -327,13 +327,7 @@ public class WADLProcessor {
         }
 
         String actualPath;
-        //        if(commonLocation != null){
-        //            actualPath = commonLocation + namespaceSegment + version + "/" + wadlName;
-        //        } else {
-        //            actualPath = RegistryConstants.GOVERNANCE_REGISTRY_BASE_PATH +
-        //                    commonWADLLocation + namespaceSegment  + version + "/" + wadlName;
         actualPath = getWadlLocation(requestContext, wadlElement, wadlName, version);
-        //        }
         if (resource.getProperty(CommonConstants.SOURCE_PROPERTY) == null) {
             resource.setProperty(CommonConstants.SOURCE_PROPERTY, CommonConstants.SOURCE_AUTO);
         }

@@ -1224,57 +1224,57 @@ public class CommonUtil {
         return dependencies.toArray(new Association[dependencies.size()]);
     }
 
-	/**
-	 * Reading content form the provided input stream.
-	 *
-	 * @param inputStream           input stream to read.
-	 * @return                      Content as a {@link java.io.ByteArrayOutputStream}
-	 * @throws RegistryException    If a failure occurs when reading the content.
-	 */
-	public static ByteArrayOutputStream readSourceContent(InputStream inputStream) throws RegistryException {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		int nextChar;
-		try {
-			while ((nextChar = inputStream.read()) != -1) {
-				outputStream.write(nextChar);
-			}
-			outputStream.flush();
-		} catch (IOException e) {
-			throw new RegistryException("Exception occurred while reading content", e);
-		}
+    /**
+     * Reading content form the provided input stream.
+     *
+     * @param inputStream           input stream to read.
+     * @return                      Content as a {@link java.io.ByteArrayOutputStream}
+     * @throws RegistryException    If a failure occurs when reading the content.
+     */
+    public static ByteArrayOutputStream readSourceContent(InputStream inputStream) throws RegistryException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int nextChar;
+        try {
+            while ((nextChar = inputStream.read()) != -1) {
+                outputStream.write(nextChar);
+            }
+            outputStream.flush();
+        } catch (IOException e) {
+            throw new RegistryException("Exception occurred while reading content", e);
+        }
 
-		return outputStream;
-	}
+        return outputStream;
+    }
 
-	/**
-	 * Closes a given input stream.
-	 *
-	 * @param inputStream   the input steam.
-	 */
-	public static void closeInputStream(InputStream inputStream) {
-		if(inputStream != null) {
-			try {
-				inputStream.close();
-			} catch (IOException e) {
-				log.error("Error occurred when closing the input stream", e);
-			}
-		}
-	}
+    /**
+     * Closes a given input stream.
+     *
+     * @param inputStream   the input steam.
+     */
+    public static void closeInputStream(InputStream inputStream) {
+        if (inputStream != null) {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                log.error("Error occurred when closing the input stream", e);
+            }
+        }
+    }
 
-	/**
-	 * Closes a given output stream.
-	 *
-	 * @param outputStream   the output steam.
-	 */
-	public static void closeOutputStream(OutputStream outputStream) {
-		if(outputStream != null) {
-			try {
-				outputStream.close();
-			} catch (IOException e) {
-				log.error("Error occurred when closing the output stream", e);
-			}
-		}
-	}
+    /**
+     * Closes a given output stream.
+     *
+     * @param outputStream the output steam.
+     */
+    public static void closeOutputStream(OutputStream outputStream) {
+        if (outputStream != null) {
+            try {
+                outputStream.close();
+            } catch (IOException e) {
+                log.error("Error occurred when closing the output stream", e);
+            }
+        }
+    }
 
     /**
      * Adds associations for a given source and target
