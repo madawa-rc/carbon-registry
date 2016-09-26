@@ -91,78 +91,6 @@ public class RESTServiceUtils {
 
     /**
      * Extracts the data from swagger and creates an REST Service registry artifact.
-     * In 5.1.0 please remove this method.
-     *
-     * @param swaggerDocObject      swagger Json Object.
-     * @param swaggerVersion        swagger version.
-     * @param resourceObjects       swagger resource object list.
-     * @return                      The API metadata
-     * @throws RegistryException    If swagger content is invalid.
-     */
-    public static OMElement createRestServiceArtifact(JsonObject swaggerDocObject, String swaggerVersion,
-            String endpointURL, List<JsonObject> resourceObjects, String swaggerPath) throws RegistryException {
-
-        if (swaggerDocObject == null || swaggerVersion == null) {
-            throw new IllegalArgumentException("Arguments are invalid. cannot create the REST service artifact. ");
-        }
-
-        OMElement data = factory.createOMElement(CommonConstants.SERVICE_ELEMENT_ROOT, namespace);
-        OMElement overview = factory.createOMElement(OVERVIEW, namespace);
-        //OMElement provider = factory.createOMElement(PROVIDER, namespace);
-        OMElement name = factory.createOMElement(NAME, namespace);
-        OMElement context = factory.createOMElement(CONTEXT, namespace);
-        OMElement apiVersion = factory.createOMElement(VERSION, namespace);
-        OMElement endpoint = factory.createOMElement(ENDPOINT_URL, namespace);
-        OMElement transports = factory.createOMElement(TRANSPORTS, namespace);
-        OMElement description = factory.createOMElement(DESCRIPTION, namespace);
-        List<OMElement> uriTemplates = null;
-
-        JsonObject infoObject = swaggerDocObject.get(SwaggerConstants.INFO).getAsJsonObject();
-        //get api name.
-        String apiName = getChildElementText(infoObject, SwaggerConstants.TITLE).replaceAll("\\s", "");
-        name.setText(apiName);
-        context.setText("/" + apiName);
-        //get api description.
-        description.setText(getChildElementText(infoObject, SwaggerConstants.DESCRIPTION));
-        //get api provider. (Current logged in user) : Alternative - CurrentSession.getUser();
-        //provider.setText(CarbonContext.getThreadLocalCarbonContext().getUsername());
-        endpoint.setText(endpointURL);
-
-        if (SwaggerConstants.SWAGGER_VERSION_2.equals(swaggerVersion)) {
-            apiVersion.setText(getChildElementText(infoObject, SwaggerConstants.VERSION));
-            transports.setText(getChildElementText(swaggerDocObject, SwaggerConstants.SCHEMES));
-            uriTemplates = createURITemplateFromSwagger2(swaggerDocObject);
-        } else if (SwaggerConstants.SWAGGER_VERSION_12.equals(swaggerVersion)) {
-            apiVersion.setText(getChildElementText(swaggerDocObject, SwaggerConstants.API_VERSION));
-            uriTemplates = createURITemplateFromSwagger12(resourceObjects);
-        }
-
-        //overview.addChild(provider);
-        overview.addChild(name);
-        overview.addChild(context);
-        overview.addChild(apiVersion);
-        overview.addChild(description);
-        overview.addChild(endpoint);
-        data.addChild(overview);
-
-        OMElement interfaceElement = factory.createOMElement(INTERFACE, namespace);
-        OMElement swagger = factory.createOMElement(SWAGGER, namespace);
-        swagger.setText(swaggerPath);
-        interfaceElement.addChild(swagger);
-        interfaceElement.addChild(transports);
-        data.addChild(interfaceElement);
-        if (uriTemplates != null) {
-            for (OMElement uriTemplate : uriTemplates) {
-                data.addChild(uriTemplate);
-            }
-        }
-
-        return data;
-    }
-
-    /**
-     * Extracts the data from swagger and creates an REST Service registry artifact.
-     * In 5.1.0 Please remove the above method
      *
      * @param swaggerDocObject      swagger Json Object.
      * @param swaggerVersion        swagger version.
@@ -178,7 +106,8 @@ public class RESTServiceUtils {
             throws RegistryException {
 
         if (swaggerDocObject == null || swaggerVersion == null) {
-            throw new IllegalArgumentException("Arguments are invalid. cannot create the REST service artifact. ");
+            throw new IllegalArgumentException("Swagger document object or swagger version is empty. cannot create "
+                    + "the REST service artifact as above  arguments are mandatory.");
         }
 
         OMElement data = factory.createOMElement(CommonConstants.SERVICE_ELEMENT_ROOT, namespace);
@@ -242,7 +171,7 @@ public class RESTServiceUtils {
      * @param wadlName    wadl name.
      * @param version     wadl version.
      * @param wadlPath    wadl path.
-     * @return            REST Service element.
+     * @return REST Service element.
      */
     public static OMElement createRestServiceArtifact(OMElement wadlElement, String wadlName, String version,
             String wadlPath) {
@@ -316,8 +245,8 @@ public class RESTServiceUtils {
             throws RegistryException {
 
         if (requestContext == null || serviceInfoElement == null) {
-            throw new IllegalArgumentException(
-                    "Some or all of the arguments may be null. Cannot add the rest service to registry. ");
+            throw new IllegalArgumentException("Either RequestContext information or serviceInfo XML element or both "
+                    + "are empty. Cannot add the service to the registry as above are mandatory arguments.");
         }
 
         Registry registry = requestContext.getRegistry();
@@ -654,7 +583,6 @@ public class RESTServiceUtils {
                 uriTemplateElement.addChild(authTypeElement);
                 uriTemplates.add(uriTemplateElement);
             }
-
         }
         return uriTemplates;
     }

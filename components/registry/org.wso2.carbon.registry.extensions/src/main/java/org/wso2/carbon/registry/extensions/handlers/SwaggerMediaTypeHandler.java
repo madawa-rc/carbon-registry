@@ -42,116 +42,116 @@ import java.util.Iterator;
  */
 public class SwaggerMediaTypeHandler extends Handler {
 
-	private String swaggerLocation;
-	private String restServiceLocation;
-	private String endpointLocation;
-	private boolean createService = true;
+    private String swaggerLocation;
+    private String restServiceLocation;
+    private String endpointLocation;
+    private boolean createService = true;
 
-	/**
-	 * Extracts the common location for swagger docs from registry.xml entry
-	 *
-	 * @param locationConfiguration location configuration element
-	 */
-	public void setSwaggerLocationConfiguration(OMElement locationConfiguration) {
-		Iterator confElements = locationConfiguration.getChildElements();
-		while (confElements.hasNext()) {
-			OMElement confElement = (OMElement)confElements.next();
-			if (CommonConstants.LOCATION_TAG.equals(confElement.getLocalName())) {
-				swaggerLocation = confElement.getText();
-				if (!swaggerLocation.startsWith(RegistryConstants.PATH_SEPARATOR)) {
-				swaggerLocation = RegistryConstants.PATH_SEPARATOR + swaggerLocation;
-				}
-				if (!swaggerLocation.endsWith(RegistryConstants.PATH_SEPARATOR)) {
-					swaggerLocation = swaggerLocation + RegistryConstants.PATH_SEPARATOR;
-				}
-			}
-		}
-	}
+    /**
+     * Extracts the common location for swagger docs from registry.xml entry
+     *
+     * @param locationConfiguration location configuration element
+     */
+    public void setSwaggerLocationConfiguration(OMElement locationConfiguration) {
+        Iterator confElements = locationConfiguration.getChildElements();
+        while (confElements.hasNext()) {
+            OMElement confElement = (OMElement) confElements.next();
+            if (CommonConstants.LOCATION_TAG.equals(confElement.getLocalName())) {
+                swaggerLocation = confElement.getText();
+                if (!swaggerLocation.startsWith(RegistryConstants.PATH_SEPARATOR)) {
+                    swaggerLocation = RegistryConstants.PATH_SEPARATOR + swaggerLocation;
+                }
+                if (!swaggerLocation.endsWith(RegistryConstants.PATH_SEPARATOR)) {
+                    swaggerLocation = swaggerLocation + RegistryConstants.PATH_SEPARATOR;
+                }
+            }
+        }
+    }
 
-	/**
-	 * Extracts the common location for REST API artifacts from registry.xml entry.
-	 *
-	 * @param locationConfiguration location configuration element
-	 */
-	public void setRestServiceLocationConfiguration(OMElement locationConfiguration) {
-		Iterator confElements = locationConfiguration.getChildElements();
-		while (confElements.hasNext()) {
-			OMElement confElement = (OMElement)confElements.next();
-			if (CommonConstants.LOCATION_TAG.equals(confElement.getLocalName())) {
-				restServiceLocation = confElement.getText();
-				if (!restServiceLocation.startsWith(RegistryConstants.PATH_SEPARATOR)) {
-					restServiceLocation = RegistryConstants.PATH_SEPARATOR + restServiceLocation;
-				}
-				if (!restServiceLocation.endsWith(RegistryConstants.PATH_SEPARATOR)) {
-					restServiceLocation = restServiceLocation + RegistryConstants.PATH_SEPARATOR;
-				}
-			}
-		}
-		RESTServiceUtils.setCommonRestServiceLocation(restServiceLocation);
-	}
+    /**
+     * Extracts the common location for REST API artifacts from registry.xml entry.
+     *
+     * @param locationConfiguration location configuration element
+     */
+    public void setRestServiceLocationConfiguration(OMElement locationConfiguration) {
+        Iterator confElements = locationConfiguration.getChildElements();
+        while (confElements.hasNext()) {
+            OMElement confElement = (OMElement) confElements.next();
+            if (CommonConstants.LOCATION_TAG.equals(confElement.getLocalName())) {
+                restServiceLocation = confElement.getText();
+                if (!restServiceLocation.startsWith(RegistryConstants.PATH_SEPARATOR)) {
+                    restServiceLocation = RegistryConstants.PATH_SEPARATOR + restServiceLocation;
+                }
+                if (!restServiceLocation.endsWith(RegistryConstants.PATH_SEPARATOR)) {
+                    restServiceLocation = restServiceLocation + RegistryConstants.PATH_SEPARATOR;
+                }
+            }
+        }
+        RESTServiceUtils.setCommonRestServiceLocation(restServiceLocation);
+    }
 
-	/**
-	 * Extracts the common location for REST API Endpoint artifacts from registry.xml entry.
-	 *
-	 * @param locationConfiguration location configuration element
-	 */
-	public void setEndpointLocationConfiguration(OMElement locationConfiguration) {
-		Iterator confElements = locationConfiguration.getChildElements();
-		while (confElements.hasNext()) {
-			OMElement confElement = (OMElement)confElements.next();
-			if (CommonConstants.LOCATION_TAG.equals(confElement.getLocalName())) {
-				endpointLocation = confElement.getText();
-				if (!endpointLocation.startsWith(RegistryConstants.PATH_SEPARATOR)) {
-					endpointLocation = RegistryConstants.PATH_SEPARATOR + endpointLocation;
-				}
-				if (!endpointLocation.endsWith(RegistryConstants.PATH_SEPARATOR)) {
-					endpointLocation = endpointLocation + RegistryConstants.PATH_SEPARATOR;
-				}
-			}
-		}
-		RESTServiceUtils.setCommonEndpointLocation(endpointLocation);
-	}
+    /**
+     * Extracts the common location for REST API Endpoint artifacts from registry.xml entry.
+     *
+     * @param locationConfiguration location configuration element
+     */
+    public void setEndpointLocationConfiguration(OMElement locationConfiguration) {
+        Iterator confElements = locationConfiguration.getChildElements();
+        while (confElements.hasNext()) {
+            OMElement confElement = (OMElement) confElements.next();
+            if (CommonConstants.LOCATION_TAG.equals(confElement.getLocalName())) {
+                endpointLocation = confElement.getText();
+                if (!endpointLocation.startsWith(RegistryConstants.PATH_SEPARATOR)) {
+                    endpointLocation = RegistryConstants.PATH_SEPARATOR + endpointLocation;
+                }
+                if (!endpointLocation.endsWith(RegistryConstants.PATH_SEPARATOR)) {
+                    endpointLocation = endpointLocation + RegistryConstants.PATH_SEPARATOR;
+                }
+            }
+        }
+        RESTServiceUtils.setCommonEndpointLocation(endpointLocation);
+    }
 
-	public boolean isCreateService() {
-		return createService;
-	}
+    public boolean isCreateService() {
+        return createService;
+    }
 
-	/**
-	 * Extracts createService property from the registry.xml
-	 *
-	 * @param createService createService property
-	 */
-	public void setCreateService(String createService) {
-		this.createService = Boolean.valueOf(createService);
-	}
+    /**
+     * Extracts createService property from the registry.xml
+     *
+     * @param createService createService property
+     */
+    public void setCreateService(String createService) {
+        this.createService = Boolean.valueOf(createService);
+    }
 
-	/**
-	 * Processes the PUT action for swagger files.
-	 *
-	 * @param requestContext        information about the current request.
-	 * @throws RegistryException    If fails due a handler specific error.
-	 */
-	@Override
-	public void put(RequestContext requestContext) throws RegistryException {
-		//Acquiring the update lock if available.
-		if (!CommonUtil.isUpdateLockAvailable()) {
-			return;
-		}
-		CommonUtil.acquireUpdateLock();
+    /**
+     * Processes the PUT action for swagger files.
+     *
+     * @param requestContext        information about the current request.
+     * @throws RegistryException    If fails due a handler specific error.
+     */
+    @Override
+    public void put(RequestContext requestContext) throws RegistryException {
+        //Acquiring the update lock if available.
+        if (!CommonUtil.isUpdateLockAvailable()) {
+            return;
+        }
+        CommonUtil.acquireUpdateLock();
 
-		InputStream inputStream = null;
-		try {
-			Resource resource = requestContext.getResource();
+        InputStream inputStream = null;
+        try {
+            Resource resource = requestContext.getResource();
 
-			if (resource == null) {
-				throw new RegistryException(CommonConstants.RESOURCE_NOT_EXISTS);
-			}
+            if (resource == null) {
+                throw new RegistryException(CommonConstants.RESOURCE_NOT_EXISTS);
+            }
 
-			Object resourceContentObj = resource.getContent();
+            Object resourceContentObj = resource.getContent();
 
-			if (resourceContentObj == null || !(resourceContentObj instanceof byte[])) {
-				throw new RegistryException(CommonConstants.INVALID_CONTENT);
-			}
+            if (resourceContentObj == null || !(resourceContentObj instanceof byte[])) {
+                throw new RegistryException(CommonConstants.INVALID_CONTENT);
+            }
 
             requestContext
                     .setSourceURL(requestContext.getResource().getProperty(CommonConstants.SOURCEURL_PARAMETER_NAME));
@@ -161,14 +161,13 @@ public class SwaggerMediaTypeHandler extends Handler {
             if (StringUtils.isBlank(sourceURL)) {
                 inputStream = new ByteArrayInputStream((byte[]) resourceContentObj);
                 SwaggerProcessor processor = new SwaggerProcessor(requestContext, isCreateService());
-				swaggerPath = processor
+                swaggerPath = processor
                         .processSwagger(inputStream, getChrootedLocation(requestContext.getRegistryContext()), null);
             } else {
                 //Open a stream to the sourceURL
                 inputStream = new URL(sourceURL).openStream();
-
                 SwaggerProcessor processor = new SwaggerProcessor(requestContext, isCreateService());
-				swaggerPath = processor
+                swaggerPath = processor
                         .processSwagger(inputStream, getChrootedLocation(requestContext.getRegistryContext()),
                                 sourceURL);
             }
@@ -184,57 +183,58 @@ public class SwaggerMediaTypeHandler extends Handler {
         }
     }
 
-	/**
-	 * Creates a resource in the given path by fetching the resource content from the given URL.
-	 *
-	 * @param requestContext        information about the current request.
-	 * @throws RegistryException    If import fails due a handler specific error
-	 */
-	@Override
-	public void importResource(RequestContext requestContext) throws RegistryException {
-		//Acquiring the update lock if available.
-		if (!CommonUtil.isUpdateLockAvailable()) {
-			return;
-		}
-		CommonUtil.acquireUpdateLock();
+    /**
+     * Creates a resource in the given path by fetching the resource content from the given URL.
+     *
+     * @param requestContext        information about the current request.
+     * @throws RegistryException    If import fails due a handler specific error
+     */
+    @Override
+    public void importResource(RequestContext requestContext) throws RegistryException {
+        //Acquiring the update lock if available.
+        if (!CommonUtil.isUpdateLockAvailable()) {
+            return;
+        }
+        CommonUtil.acquireUpdateLock();
 
-		String sourceURL = null;
-		InputStream inputStream = null;
-		try {
-			sourceURL = requestContext.getSourceURL();
+        String sourceURL = null;
+        InputStream inputStream = null;
+        try {
+            sourceURL = requestContext.getSourceURL();
 
-			if (sourceURL == null || sourceURL.isEmpty()) {
-				throw new RegistryException(CommonConstants.EMPTY_URL);
-			}
+            if (sourceURL == null || sourceURL.isEmpty()) {
+                throw new RegistryException(CommonConstants.EMPTY_URL);
+            }
 
+            if (sourceURL.toLowerCase().startsWith("file:")) {
+                throw new RegistryException(CommonConstants.URL_TO_LOCAL_FILE);
+            }
+            //Open a stream to the sourceURL
+            inputStream = new URL(sourceURL).openStream();
 
-			if (sourceURL.toLowerCase().startsWith("file:")) {
-				throw new RegistryException(CommonConstants.URL_TO_LOCAL_FILE);
-			}
-			//Open a stream to the sourceURL
-			inputStream = new URL(sourceURL).openStream();
-
-			SwaggerProcessor processor = new SwaggerProcessor(requestContext, isCreateService());
-			if(processor.processSwagger(inputStream, getChrootedLocation(requestContext.getRegistryContext()), sourceURL) != null) {
+            SwaggerProcessor processor = new SwaggerProcessor(requestContext, isCreateService());
+            if (processor
+                    .processSwagger(inputStream, getChrootedLocation(requestContext.getRegistryContext()), sourceURL)
+                    != null) {
                 requestContext.setProcessingComplete(true);
             }
-		} catch (IOException e) {
-			throw new RegistryException("The URL " + sourceURL + " is incorrect.", e);
-		} finally {
-			CommonUtil.closeInputStream(inputStream);
-			CommonUtil.releaseUpdateLock();
-		}
-	}
+        } catch (IOException e) {
+            throw new RegistryException("The URL " + sourceURL + " is incorrect.", e);
+        } finally {
+            CommonUtil.closeInputStream(inputStream);
+            CommonUtil.releaseUpdateLock();
+        }
+    }
 
-	/**
-	 * Returns the root location of the Swagger.
-	 *
-	 * @param registryContext   registry context
-	 * @return                  The root location of the Swagger.
-	 */
-	private String getChrootedLocation(RegistryContext registryContext) {
-		return RegistryUtils
-				.getAbsolutePath(registryContext, RegistryConstants.GOVERNANCE_REGISTRY_BASE_PATH + swaggerLocation);
-	}
+    /**
+     * Returns the root location of the Swagger.
+     *
+     * @param registryContext   registry context
+     * @return                  The root location of the Swagger.
+     */
+    private String getChrootedLocation(RegistryContext registryContext) {
+        return RegistryUtils
+                .getAbsolutePath(registryContext, RegistryConstants.GOVERNANCE_REGISTRY_BASE_PATH + swaggerLocation);
+    }
 
 }
