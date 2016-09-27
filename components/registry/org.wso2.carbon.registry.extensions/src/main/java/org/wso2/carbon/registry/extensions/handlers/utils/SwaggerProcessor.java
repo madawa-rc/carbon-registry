@@ -78,6 +78,12 @@ public class SwaggerProcessor {
     private String endpointLocation;
     private boolean createRestServiceArtifact;
 
+    /**
+     * Creates a {@link SwaggerProcessor} instance
+     *
+     * @param requestContext                information about the request.
+     * @param createRestServiceArtifact     boolean to specify whether to create the Rest Service or not.
+     */
     public SwaggerProcessor(RequestContext requestContext, boolean createRestServiceArtifact) {
         this.parser = new JsonParser();
         this.requestContext = requestContext;

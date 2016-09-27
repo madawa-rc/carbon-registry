@@ -64,7 +64,6 @@ public class RESTServiceUtils {
 
     private static final Log log = LogFactory.getLog(RESTServiceUtils.class);
     private static final String OVERVIEW = "overview";
-    //private static final String PROVIDER = "provider";
     private static final String NAME = "name";
     private static final String CONTEXT = "context";
     private static final String VERSION = "version";
@@ -112,7 +111,6 @@ public class RESTServiceUtils {
 
         OMElement data = factory.createOMElement(CommonConstants.SERVICE_ELEMENT_ROOT, namespace);
         OMElement overview = factory.createOMElement(OVERVIEW, namespace);
-        //OMElement provider = factory.createOMElement(PROVIDER, namespace);
         OMElement name = factory.createOMElement(NAME, namespace);
         OMElement context = factory.createOMElement(CONTEXT, namespace);
         OMElement apiVersion = factory.createOMElement(VERSION, namespace);
@@ -190,7 +188,7 @@ public class RESTServiceUtils {
         List<OMElement> uriTemplates = null;
 
         //provider.setText(CarbonContext.getThreadLocalCarbonContext().getUsername());
-        String serviceName = wadlName.contains(".") ? wadlName.substring(0, wadlName.lastIndexOf(".")) : wadlName;
+        String serviceName = wadlName.contains(".") ? wadlName.substring(0, wadlName.lastIndexOf('.')) : wadlName;
         name.setText(serviceName);
         context.setText("/" + serviceName);
         apiVersion.setText(version);
