@@ -24,7 +24,6 @@ import org.apache.axiom.om.OMAbstractFactory;
 import org.apache.axiom.om.OMElement;
 import org.apache.axiom.om.OMFactory;
 import org.apache.axiom.om.OMNamespace;
-import org.apache.axiom.om.impl.builder.StAXOMBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,10 +42,6 @@ import org.wso2.carbon.registry.extensions.utils.CommonConstants;
 import org.wso2.carbon.registry.extensions.utils.CommonUtil;
 
 import javax.xml.namespace.QName;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -262,74 +257,20 @@ public class RESTServiceUtils {
         String apiName = overview.getFirstChildWithName(new QName(CommonConstants.SERVICE_ELEMENT_NAMESPACE, NAME))
                 .getText();
         serviceVersion = (serviceVersion == null) ? CommonConstants.SERVICE_VERSION_DEFAULT_VALUE : serviceVersion;
-
         String serviceProvider = CarbonContext.getThreadLocalCarbonContext().getUsername();
-
         String pathExpression = getRestServicePath(requestContext, serviceInfoElement, apiName, serviceProvider);
 
         if (registry.resourceExists(pathExpression)) {
-            Resource oldResource = registry.get(pathExpression);
-            Object resourceContent = oldResource.getContent();
-            OMElement oldServiceContentElement;
-            String oldServiceInfo;
-
-            if (resourceContent instanceof String) {
-                oldServiceInfo = (String) resourceContent;
-            } else {
-                oldServiceInfo = RegistryUtils.decodeBytes((byte[]) resourceContent);
-            }
-
-            XMLStreamReader reader;
-            try {
-                reader = XMLInputFactory.newInstance().createXMLStreamReader(new StringReader(oldServiceInfo));
-                StAXOMBuilder builder = new StAXOMBuilder(reader);
-                oldServiceContentElement = builder.getDocumentElement();
-            } catch (XMLStreamException e) {
-                StringBuilder msg = new StringBuilder("Error in parsing the service content of the service. Path: ")
-                        .append(requestContext.getResourcePath().getPath()).append(".");
-                throw new RegistryException(msg.toString(), e);
-            }
-
-            if (serviceInfoElement.equals(oldServiceContentElement)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Old service content is similar to the updated service content. "
-                            + "Skipping further processing.");
-                }
-                requestContext.setProcessingComplete(true);
-            }
-
-            String oldSwaggerUrl = getDefinitionURL(oldServiceContentElement, SWAGGER);
-            String oldWadlUrl = getDefinitionURL(oldServiceContentElement, WADL);
-            String servicePath = CommonUtil
-                    .getRegistryPath(registry.getRegistryContext(), requestContext.getResourcePath().getPath());
-
-            /*
-            If definition url (swagger/wadl) is changed and if there exists a previously imported resource, removing
-            associations created by the old resource and removing the endpoint entries created.
-             */
-            if (StringUtils.isNotBlank(oldSwaggerUrl) && !oldSwaggerUrl
-                    .equals(getDefinitionURL(serviceInfoElement, SWAGGER))) {
-                registry.removeAssociation(servicePath, oldSwaggerUrl, CommonConstants.DEPENDS);
-                registry.removeAssociation(oldSwaggerUrl, servicePath, CommonConstants.USED_BY);
-            }
-
-            if (StringUtils.isNotBlank(oldWadlUrl) && !oldWadlUrl.equals(getDefinitionURL(serviceInfoElement, WADL))) {
-                registry.removeAssociation(servicePath, oldWadlUrl, CommonConstants.DEPENDS);
-                registry.removeAssociation(oldWadlUrl, servicePath, CommonConstants.USED_BY);
-            }
+            processExistingRestService(requestContext, registry, serviceInfoElement, pathExpression);
         }
 
         serviceResource.setProperty(RegistryConstants.VERSION_PARAMETER_NAME, serviceVersion);
         serviceResource.setProperty(CommonConstants.SOURCE_PROPERTY, CommonConstants.SOURCE_AUTO);
-        //set content
         serviceResource.setContent(RegistryUtils.encodeString(serviceInfoElement.toString()));
 
         String resourceId = serviceResource.getUUID();
-        //set resource UUID
         resourceId = (resourceId == null) ? UUID.randomUUID().toString() : resourceId;
-
         serviceResource.setUUID(resourceId);
-        //saving the api resource to repository.
         registry.put(pathExpression, serviceResource);
 
         EndpointUtils.saveEndpointsFromServices(requestContext, pathExpression, serviceInfoElement, registry,
@@ -341,6 +282,59 @@ public class RESTServiceUtils {
             log.debug("REST Service created at " + pathExpression);
         }
         return pathExpression;
+    }
+
+    /**
+     * Processes if the rest service resource already exists.
+     *
+     * @param requestContext        information about current request.
+     * @param registry              registry of the resource.
+     * @param serviceInfoElement    service artifact metadata.
+     * @param pathExpression        rest service path.
+     * @throws RegistryException    If unable to process the request.
+     */
+    private static void processExistingRestService(RequestContext requestContext, Registry registry,
+            OMElement serviceInfoElement, String pathExpression) throws RegistryException {
+        Resource oldResource = registry.get(pathExpression);
+        Object resourceContent = oldResource.getContent();
+
+        String oldServiceInfo;
+
+        if (resourceContent instanceof String) {
+            oldServiceInfo = (String) resourceContent;
+        } else {
+            oldServiceInfo = RegistryUtils.decodeBytes((byte[]) resourceContent);
+        }
+
+        OMElement oldServiceContentElement = CommonUtil.getXMLContentFromString(requestContext, oldServiceInfo);
+
+        if (serviceInfoElement.equals(oldServiceContentElement)) {
+            if (log.isDebugEnabled()) {
+                log.debug("Old service content is similar to the updated service content. "
+                        + "Skipping further processing.");
+            }
+            requestContext.setProcessingComplete(true);
+        }
+
+        String oldSwaggerUrl = getDefinitionURL(oldServiceContentElement, SWAGGER);
+        String oldWadlUrl = getDefinitionURL(oldServiceContentElement, WADL);
+        String servicePath = CommonUtil
+                .getRegistryPath(registry.getRegistryContext(), requestContext.getResourcePath().getPath());
+
+        /*
+        If definition url (swagger/wadl) is changed and if there exists a previously imported resource, removing
+        associations created by the old resource and removing the endpoint entries created.
+         */
+        if (StringUtils.isNotBlank(oldSwaggerUrl) && !oldSwaggerUrl
+                .equals(getDefinitionURL(serviceInfoElement, SWAGGER))) {
+            registry.removeAssociation(servicePath, oldSwaggerUrl, CommonConstants.DEPENDS);
+            registry.removeAssociation(oldSwaggerUrl, servicePath, CommonConstants.USED_BY);
+        }
+
+        if (StringUtils.isNotBlank(oldWadlUrl) && !oldWadlUrl.equals(getDefinitionURL(serviceInfoElement, WADL))) {
+            registry.removeAssociation(servicePath, oldWadlUrl, CommonConstants.DEPENDS);
+            registry.removeAssociation(oldWadlUrl, servicePath, CommonConstants.USED_BY);
+        }
     }
 
     /**

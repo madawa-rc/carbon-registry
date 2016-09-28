@@ -19,7 +19,9 @@ package org.wso2.carbon.registry.extensions.utils;
 
 import org.apache.axiom.om.OMAbstractFactory;
 import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.impl.builder.StAXOMBuilder;
 import org.apache.axiom.om.util.AXIOMUtil;
+import org.apache.axis2.transport.RequestResponseTransport;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -43,11 +45,10 @@ import org.wso2.carbon.registry.extensions.services.Utils;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import javax.xml.stream.XMLStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1224,6 +1225,22 @@ public class CommonUtil {
         return dependencies.toArray(new Association[dependencies.size()]);
     }
 
+    public static OMElement getXMLContentFromString(RequestContext requestContext, String content)
+            throws RegistryException {
+        XMLStreamReader reader = null;
+        try {
+            reader = XMLInputFactory.newInstance().createXMLStreamReader(new StringReader(content));
+            StAXOMBuilder builder = new StAXOMBuilder(reader);
+            return builder.getDocumentElement();
+        } catch (XMLStreamException e) {
+            String msg = "Error in parsing the service content of the service. Path: " +
+                    requestContext.getResourcePath().getPath();
+            throw new RegistryException(msg, e);
+        } finally {
+            closeXMLStreamReader(reader);
+        }
+    }
+
     /**
      * Reading content form the provided input stream.
      *
@@ -1272,6 +1289,21 @@ public class CommonUtil {
                 outputStream.close();
             } catch (IOException e) {
                 log.error("Error occurred when closing the output stream", e);
+            }
+        }
+    }
+
+    /**
+     * Closes a given XMLStreamReader.
+     *
+     * @param reader    the XMLStreamReader object.
+     */
+    public static void closeXMLStreamReader(XMLStreamReader reader) {
+        if (reader != null) {
+            try {
+                reader.close();
+            } catch (XMLStreamException e) {
+                log.error("Error occurred in closing the XMLStreamReader");
             }
         }
     }
