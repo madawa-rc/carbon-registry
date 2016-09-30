@@ -1225,6 +1225,14 @@ public class CommonUtil {
         return dependencies.toArray(new Association[dependencies.size()]);
     }
 
+    /**
+     * Parse string content and return XML content as {@link OMElement}
+     *
+     * @param requestContext        information about the current request.
+     * @param content               string content.
+     * @return                      XML content.
+     * @throws RegistryException    If unable to parse the content and build {@link OMElement}
+     */
     public static OMElement getXMLContentFromString(RequestContext requestContext, String content)
             throws RegistryException {
         XMLStreamReader reader = null;
