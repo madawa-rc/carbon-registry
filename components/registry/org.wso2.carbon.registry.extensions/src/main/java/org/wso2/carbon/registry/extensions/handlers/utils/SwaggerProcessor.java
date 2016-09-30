@@ -141,7 +141,6 @@ public class SwaggerProcessor {
             } else {
                 return null;
             }
-
         } else if (SwaggerConstants.SWAGGER_VERSION_2.equals(swaggerVersion)) {
             if (addSwaggerDocumentToRegistry(swaggerContentStream, swaggerResourcePath, documentVersion)) {
                 createEndpointElement(swaggerDocObject, swaggerVersion);
@@ -169,9 +168,7 @@ public class SwaggerProcessor {
                 log.warn("Service content is null. Cannot create the REST Service artifact.");
             }
         }
-
         CommonUtil.closeOutputStream(swaggerContentStream);
-
         return swaggerResourcePath;
     }
 
@@ -232,14 +229,12 @@ public class SwaggerProcessor {
         }
 
         String resourceId = (resource.getUUID() == null) ? UUID.randomUUID().toString() : resource.getUUID();
-
         resource.setUUID(resourceId);
         resource.setMediaType(CommonConstants.SWAGGER_MEDIA_TYPE);
         resource.setContent(contentStream.toByteArray());
         resource.addProperty(RegistryConstants.VERSION_PARAMETER_NAME, documentVersion);
         CommonUtil.copyProperties(this.requestContext.getResource(), resource);
         registry.put(path, resource);
-
         return true;
     }
 
@@ -268,7 +263,6 @@ public class SwaggerProcessor {
      */
     private List<JsonObject> addResourceDocsToRegistry(JsonObject swaggerDocObject, String sourceUrl,
             String swaggerDocPath) throws RegistryException {
-
         if (sourceUrl == null) {
             log.debug(CommonConstants.EMPTY_URL);
             log.warn("Resource paths cannot be read. Creating the REST service might fail.");
@@ -312,7 +306,6 @@ public class SwaggerProcessor {
                 registry.addAssociation(swaggerDocPath, path, CommonConstants.DEPENDS);
             }
         }
-
         CommonUtil.closeOutputStream(resourceContentStream);
         CommonUtil.closeInputStream(resourceInputStream);
         return resourceObjects;
@@ -356,16 +349,13 @@ public class SwaggerProcessor {
                     host = sourceURL.getAuthority();
                 }
             }
-
             if (host == null) {
                 log.warn("Can't derive the endpoint(host) url when uploading swagger from file. "
                         + "Endpoint creation might fail. ");
                 return;
             }
-
             JsonElement basePathElement = swaggerObject.get(SwaggerConstants.BASE_PATH);
             String basePath = (basePathElement != null) ? basePathElement.getAsString() : DEFAULT_BASE_PATH;
-
             endpointUrl = transport + host + basePath;
         }
         /*
@@ -381,7 +371,6 @@ public class SwaggerProcessor {
         } catch (XMLStreamException e) {
             throw new RegistryException("Error in creating the endpoint element. ", e);
         }
-
     }
 
     /**
@@ -406,9 +395,7 @@ public class SwaggerProcessor {
 
         swaggerResourcesPath = rootLocation + serviceProvider + RegistryConstants.PATH_SEPARATOR + serviceName +
                 RegistryConstants.PATH_SEPARATOR + documentVersion;
-
         String pathExpression = getSwaggerRegistryPath(swaggerDocName, serviceProvider);
-
         return RegistryUtils.getAbsolutePath(registry.getRegistryContext(), pathExpression);
     }
 
@@ -444,7 +431,6 @@ public class SwaggerProcessor {
      */
     private JsonObject getSwaggerObject(String swaggerContent) throws RegistryException {
         JsonElement swaggerElement = parser.parse(swaggerContent);
-
         if (swaggerElement == null || swaggerElement.isJsonNull()) {
             throw new RegistryException("Unexpected error occurred when parsing the swagger content.");
         } else {
@@ -470,5 +456,4 @@ public class SwaggerProcessor {
         }
         return swaggerVersionElement.getAsString();
     }
-
 }

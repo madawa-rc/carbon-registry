@@ -153,7 +153,6 @@ public class RESTServiceUtils {
                 data.addChild(uriTemplate);
             }
         }
-
         return data;
     }
 
@@ -506,7 +505,6 @@ public class RESTServiceUtils {
      * @return URITemplate element.
      */
     private static List<OMElement> createURITemplateFromSwagger12(List<JsonObject> resourceObjects) {
-
         List<OMElement> uriTemplates = new ArrayList<>();
 
         for (JsonObject resourceObject : resourceObjects) {
@@ -537,9 +535,7 @@ public class RESTServiceUtils {
                     uriTemplates.add(uriTemplateElement);
                 }
             }
-
         }
-
         return uriTemplates;
     }
 

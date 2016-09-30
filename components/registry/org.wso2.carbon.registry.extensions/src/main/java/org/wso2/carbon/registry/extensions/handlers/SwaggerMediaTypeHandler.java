@@ -138,21 +138,16 @@ public class SwaggerMediaTypeHandler extends Handler {
             return;
         }
         CommonUtil.acquireUpdateLock();
-
         InputStream inputStream = null;
         try {
             Resource resource = requestContext.getResource();
-
             if (resource == null) {
                 throw new RegistryException(CommonConstants.RESOURCE_NOT_EXISTS);
             }
-
             Object resourceContentObj = resource.getContent();
-
             if (resourceContentObj == null || !(resourceContentObj instanceof byte[])) {
                 throw new RegistryException(CommonConstants.INVALID_CONTENT);
             }
-
             requestContext
                     .setSourceURL(requestContext.getResource().getProperty(CommonConstants.SOURCEURL_PARAMETER_NAME));
             String sourceURL = requestContext.getSourceURL();
@@ -171,7 +166,6 @@ public class SwaggerMediaTypeHandler extends Handler {
                         .processSwagger(inputStream, getChrootedLocation(requestContext.getRegistryContext()),
                                 sourceURL);
             }
-
             if (swaggerPath != null) {
                 requestContext.setProcessingComplete(true);
             }
@@ -196,22 +190,18 @@ public class SwaggerMediaTypeHandler extends Handler {
             return;
         }
         CommonUtil.acquireUpdateLock();
-
         String sourceURL = null;
         InputStream inputStream = null;
         try {
             sourceURL = requestContext.getSourceURL();
-
             if (sourceURL == null || sourceURL.isEmpty()) {
                 throw new RegistryException(CommonConstants.EMPTY_URL);
             }
-
             if (sourceURL.toLowerCase().startsWith("file:")) {
                 throw new RegistryException(CommonConstants.URL_TO_LOCAL_FILE);
             }
             //Open a stream to the sourceURL
             inputStream = new URL(sourceURL).openStream();
-
             SwaggerProcessor processor = new SwaggerProcessor(requestContext, isCreateService());
             if (processor
                     .processSwagger(inputStream, getChrootedLocation(requestContext.getRegistryContext()), sourceURL)
