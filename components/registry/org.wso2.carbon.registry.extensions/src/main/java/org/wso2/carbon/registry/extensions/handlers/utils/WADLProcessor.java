@@ -481,15 +481,16 @@ public class WADLProcessor {
         return null;
     }
 
-	/**
-	 * Creates endpoint element for REST service
-	 *
-	 * @param requestContext        information about current request.
-	 * @param wadlElement           wadl document.
-	 * @param version               wadl version.
-	 * @return                      Endpoint Path.
-	 * @throws RegistryException    If fails to create endpoint element.
-	 */
+    /**
+     * Creates endpoint element for REST service
+     *
+     * @param requestContext        information about current request.
+     * @param wadlElement           wadl document.
+     * @param version               wadl version.
+     * @param servicePath           path of the service resource.
+     * @return                      Endpoint Path.
+     * @throws RegistryException    If fails to create endpoint element.
+     */
     private String createEndpointElement(RequestContext requestContext, OMElement wadlElement, String version,
             String servicePath) throws RegistryException {
         OMNamespace wadlNamespace = wadlElement.getNamespace();
