@@ -2,11 +2,7 @@
 
 ---
 
-|  Branch | Build Status |
-| :------------ |:-------------
-| Java 7      | [![Build Status](https://wso2.org/jenkins/job/carbon-registry/badge/icon)](https://wso2.org/jenkins/job/carbon-registry) |
-| Java 8 | [![Build Status](https://wso2.org/jenkins/job/carbon-registry__java8/badge/icon)](https://wso2.org/jenkins/job/carbon-registry__java8/) |
-
+[![Build Status](https://travis-ci.org/madawas/carbon-registry.svg?branch=builder)](https://travis-ci.org/madawas/carbon-registry)
 
 ---
 
