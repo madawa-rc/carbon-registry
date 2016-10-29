@@ -19,7 +19,9 @@ package org.wso2.carbon.registry.extensions.utils;
 
 import org.apache.axiom.om.OMAbstractFactory;
 import org.apache.axiom.om.OMElement;
+import org.apache.axiom.om.impl.builder.StAXOMBuilder;
 import org.apache.axiom.om.util.AXIOMUtil;
+import org.apache.axis2.transport.RequestResponseTransport;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -43,12 +45,20 @@ import org.wso2.carbon.registry.extensions.services.Utils;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.*;
+import javax.xml.stream.XMLStreamReader;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -1215,57 +1225,96 @@ public class CommonUtil {
         return dependencies.toArray(new Association[dependencies.size()]);
     }
 
-	/**
-	 * Reading content form the provided input stream.
-	 *
-	 * @param inputStream           input stream to read.
-	 * @return                      Content as a {@link java.io.ByteArrayOutputStream}
-	 * @throws RegistryException    If a failure occurs when reading the content.
-	 */
-	public static ByteArrayOutputStream readSourceContent(InputStream inputStream) throws RegistryException {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		int nextChar;
-		try {
-			while ((nextChar = inputStream.read()) != -1) {
-				outputStream.write(nextChar);
-			}
-			outputStream.flush();
-		} catch (IOException e) {
-			throw new RegistryException("Exception occurred while reading content", e);
-		}
+    /**
+     * Parse string content and return XML content as {@link OMElement}
+     *
+     * @param requestContext        information about the current request.
+     * @param content               string content.
+     * @return                      XML content.
+     * @throws RegistryException    If unable to parse the content and build {@link OMElement}
+     */
+    public static OMElement getXMLContentFromString(RequestContext requestContext, String content)
+            throws RegistryException {
+        XMLStreamReader reader = null;
+        try {
+            reader = XMLInputFactory.newInstance().createXMLStreamReader(new StringReader(content));
+            StAXOMBuilder builder = new StAXOMBuilder(reader);
+            return builder.getDocumentElement();
+        } catch (XMLStreamException e) {
+            String msg = "Error in parsing the service content of the service. Path: " +
+                    requestContext.getResourcePath().getPath();
+            throw new RegistryException(msg, e);
+        } finally {
+            closeXMLStreamReader(reader);
+        }
+    }
 
-		return outputStream;
-	}
+    /**
+     * Reading content form the provided input stream.
+     *
+     * @param inputStream           input stream to read.
+     * @return                      Content as a {@link java.io.ByteArrayOutputStream}
+     * @throws RegistryException    If a failure occurs when reading the content.
+     */
+    public static ByteArrayOutputStream readSourceContent(InputStream inputStream) throws RegistryException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int nextChar;
+        try {
+            while ((nextChar = inputStream.read()) != -1) {
+                outputStream.write(nextChar);
+            }
+            outputStream.flush();
+        } catch (IOException e) {
+            throw new RegistryException("Exception occurred while reading content", e);
+        }
 
-	/**
-	 * Closes a given input stream.
-	 *
-	 * @param inputStream   the input steam.
-	 */
-	public static void closeInputStream(InputStream inputStream) {
-		if(inputStream != null) {
-			try {
-				inputStream.close();
-			} catch (IOException e) {
-				log.error("Error occurred when closing the input stream", e);
-			}
-		}
-	}
+        return outputStream;
+    }
 
-	/**
-	 * Closes a given output stream.
-	 *
-	 * @param outputStream   the output steam.
-	 */
-	public static void closeOutputStream(OutputStream outputStream) {
-		if(outputStream != null) {
-			try {
-				outputStream.close();
-			} catch (IOException e) {
-				log.error("Error occurred when closing the output stream", e);
-			}
-		}
-	}
+    /**
+     * Closes a given input stream.
+     *
+     * @param inputStream   the input steam.
+     */
+    public static void closeInputStream(InputStream inputStream) {
+        if (inputStream != null) {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                log.error("Error occurred when closing the input stream", e);
+            }
+        }
+    }
+
+    /**
+     * Closes a given output stream.
+     *
+     * @param outputStream the output steam.
+     */
+    public static void closeOutputStream(OutputStream outputStream) {
+        if (outputStream != null) {
+            try {
+                outputStream.close();
+            } catch (IOException e) {
+                log.error("Error occurred when closing the output stream", e);
+            }
+        }
+    }
+
+    /**
+     * Closes a given XMLStreamReader.
+     *
+     * @param reader    the XMLStreamReader object.
+     */
+    public static void closeXMLStreamReader(XMLStreamReader reader) {
+        if (reader != null) {
+            try {
+                reader.close();
+            } catch (XMLStreamException e) {
+                log.error("Error occurred in closing the XMLStreamReader");
+            }
+        }
+    }
 
     /**
      * Adds associations for a given source and target

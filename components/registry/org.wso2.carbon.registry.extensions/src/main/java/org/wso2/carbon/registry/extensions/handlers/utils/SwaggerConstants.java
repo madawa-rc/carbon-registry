@@ -16,6 +16,10 @@
 
 package org.wso2.carbon.registry.extensions.handlers.utils;
 
+/**
+ * Contains the constants used in {@link org.wso2.carbon.registry.extensions.handlers.SwaggerMediaTypeHandler} and
+ * {@link SwaggerProcessor} which relates to handling documents of media type application/swagger+json
+ */
 public class SwaggerConstants {
 
 

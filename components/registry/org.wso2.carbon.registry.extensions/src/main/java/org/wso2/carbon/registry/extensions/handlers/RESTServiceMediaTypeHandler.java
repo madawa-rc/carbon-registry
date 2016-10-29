@@ -45,8 +45,11 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URL;
 import java.util.Iterator;
-import java.util.List;
 
+/**
+ * This class is an implementation of {@link org.wso2.carbon.registry.core.jdbc.handlers.Handler}. This class handles
+ * the documents with the media type application/vnd.wso2-restservice+xml.
+ */
 public class RESTServiceMediaTypeHandler extends Handler {
     private static final Log log = LogFactory.getLog(RESTServiceMediaTypeHandler.class);
     private static final String INTERFACE_ELEMENT_LOCAL_NAME = "interface";
@@ -138,7 +141,6 @@ public class RESTServiceMediaTypeHandler extends Handler {
             StringBuilder msg = new StringBuilder("Error in parsing the service content of the service. ")
                     .append("The requested path to store the service: ")
                     .append(requestContext.getResourcePath().getPath()).append(".");
-            log.error(msg.toString());
             throw new RegistryException(msg.toString(), e);
         }
 
